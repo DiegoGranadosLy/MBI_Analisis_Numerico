@@ -1,6 +1,7 @@
 import numpy
+from matplotlib import pyplot
 
-DIM = 100
+DIM = 50
 
 def generarMatriz():
     A = numpy.zeros((DIM,DIM),dtype=float)
@@ -50,16 +51,27 @@ def error(x,xk,j,A,b):
     return abs(numpy.dot(numpy.dot(0.5*xNew,A),numpy.transpose(xNew))-numpy.dot(b,xNew))
     
 
-def criterioParada(x):
-    True
+def criterioParada(A,b,x,tol,errores,itrVector,itr):
+    dxk = numpy.zeros(DIM,dtype=float)
+    for i in range (0,DIM):
+        dxk[i] = numpy.copy(x[i]-jacobi(x,i,A,b))
+    norma = numpy.linalg.norm(dxk)
+    errores  = numpy.append(numpy.copy(norma),errores)
+    itrVector =  numpy.append(numpy.copy(itr),itrVector)
+    if(norma < tol):
+        return True
+    else:
+        return False
 
-def mmb_secuencial():
+def mmb_secuencial(tol):
     #Se definen las matrices y vectores con las que se trabajara.!
     A = generarMatriz()
     b = generarVectorSolucion()
     x = numpy.ones(DIM,dtype=float)
     itr = 0
-    while itr < 10000:                      #Maximo de iteraciones para el metodo
+    errores   = numpy.array([])             #Vector de errores
+    itrVector = numpy.array([])             #Vector de errores
+    while itr < 100000:                     #Maximo de iteraciones para el metodo
         xk = numpy.copy(x)
         ek = numpy.ones(DIM,dtype=float)    #Vector de errores en ek
         for j in range(0,DIM):              #Calcular Jacobi para el elemento correspondiente
@@ -67,10 +79,11 @@ def mmb_secuencial():
             ek[j] = error(x,xk,j,A,b)       #Calcular el error asociado para ese error
         index = buscarError(ek)             #Buscar el error mas pequeno de la actualizacion y 
         x[index] = numpy.copy(xk[index])    #actualizar solo esa variable.
-    #     if(criterioParada(x)):            #Comprobar el criterio de parada
-    #         return x                      #Retornar el vector de soluciones
+        if(criterioParada(A,b,x,tol,errores,itrVector,itr)):            #Comprobar el criterio de parada
+            print(x)
+            return x                      #Retornar el vector de soluciones
         itr = itr+1
-    print("Sali")
-    print(abs(numpy.dot(numpy.dot(0.5*x,A),numpy.transpose(x))-numpy.dot(b,x)))
+    print(x)
+    return x                      #Retornar el vector de soluciones
 
-mmb_secuencial()
+mmb_secuencial(10e-10)
