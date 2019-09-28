@@ -1,9 +1,15 @@
 import numpy
-from matplotlib import pyplot
 import time
+from matplotlib import pyplot
+from joblib import Parallel, delayed
+import multiprocessing
 
+#variables y vectores globales requeridos
 DIM = 50
-
+A = []
+b = []
+x = []
+    
 def generarMatriz():
     A = numpy.zeros((DIM,DIM),dtype=float)
     for i in range(0,DIM):
@@ -64,23 +70,37 @@ def criterioParada(A,b,x,tol,errores,itrVector,itr):
     else:
         return False
 
-def mmb_secuencial(tol):
-    #Se definen las matrices y vectores con las que se trabajara.!
-    A = generarMatriz()
-    b = generarVectorSolucion()
-    x = numpy.ones(DIM,dtype=float)
+def jacobi_method(j,xk,ek):
+    
+    xk[j] = numpy.copy(jacobi(x,j,A,b))
+    ek[j] = error(x,xk,j,A,b)       #Calcular el error asociado para ese error
+    return [xk[j],ek[j]]
+
+
+def getResults(mat):
+    xk = []
+    ek = []
+    for i in range(len(mat)):
+        xk.append(mat[i][0])
+        ek.append(mat[i][1])
+    return [xk,ek]
+def mmb_paralelo(tol):
+
     itr = 0
     errores   = numpy.array([])             #Vector de errores
     itrVector = numpy.array([])             #Vector de errores
+
+    #num_cores = multiprocessing.cpu_count()
     while itr < 100000:                     #Maximo de iteraciones para el metodo
         xk = numpy.copy(x)
         ek = numpy.ones(DIM,dtype=float)    #Vector de errores en ek
-        for j in range(0,DIM):              #Calcular Jacobi para el elemento correspondiente
-            xk[j] = numpy.copy(jacobi(x,j,A,b))      
-            ek[j] = error(x,xk,j,A,b)       #Calcular el error asociado para ese error
+
+        result = Parallel(n_jobs=1)(delayed(jacobi_method)(i,xk,ek) for i in range(0,DIM)) #se paraleliza el for loop con n_jobs
+
+        [xk,ek] = getResults(result) #los resultados son copiados a los vectores correspondientes
         index = buscarError(ek)             #Buscar el error mas pequeno de la actualizacion y 
         x[index] = numpy.copy(xk[index])    #actualizar solo esa variable.
-        #print(ek)
+
         if(criterioParada(A,b,x,tol,errores,itrVector,itr)):            #Comprobar el criterio de parada
             print(x)
             return x                      #Retornar el vector de soluciones
@@ -88,9 +108,17 @@ def mmb_secuencial(tol):
     print(x)
     return x                      #Retornar el vector de soluciones
 
+
+
 if __name__ == '__main__':
+
+    DIM = 50
+    #Se definen las matrices y vectores con las que se trabajara.!
+    A = generarMatriz()
+    b = generarVectorSolucion()
+    x = numpy.ones(DIM,dtype=float)
     start_time = time.time()
-    mmb_secuencial(10e-5)
+    mmb_paralelo(10e-5)
     end_time = time.time()
     print("execution time: ")
     print(end_time - start_time)
