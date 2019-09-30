@@ -1,9 +1,9 @@
 import numpy
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 import time
 
 DIM = 50
-
+errores = []
 def generarMatriz():
     A = numpy.zeros((DIM,DIM),dtype=float)
     for i in range(0,DIM):
@@ -32,7 +32,7 @@ def buscarError(ek):
     index = 0
     for i in range(0,DIM):
         if(ek[i] > ek[index]):
-            index = i
+            index = i        
     return index
 
 def jacobi(x,j,A,b):
@@ -52,14 +52,18 @@ def error(x,xk,j,A,b):
     return abs(numpy.dot(numpy.dot(0.5*xNew,A),numpy.transpose(xNew))-numpy.dot(b,xNew))
     
 
-def criterioParada(A,b,x,tol,errores,itrVector,itr):
+def criterioParada(A,b,x,tol):
     dxk = numpy.zeros(DIM,dtype=float)
     for i in range (0,DIM):
         dxk[i] = numpy.copy(x[i]-jacobi(x,i,A,b))
     norma = numpy.linalg.norm(dxk)
-    errores  = numpy.append(numpy.copy(norma),errores)
-    itrVector =  numpy.append(numpy.copy(itr),itrVector)
+    errores.append(numpy.copy(norma))
     if(norma < tol):
+        plt.plot(errores)
+        plt.xlabel('Iteraciones')
+        plt.ylabel('Error')
+        plt.title('Grafico de error vs iteraciones')
+        plt.show()
         return True
     else:
         return False
@@ -80,8 +84,7 @@ def mmb_secuencial(tol):
             ek[j] = error(x,xk,j,A,b)       #Calcular el error asociado para ese error
         index = buscarError(ek)             #Buscar el error mas pequeno de la actualizacion y 
         x[index] = numpy.copy(xk[index])    #actualizar solo esa variable.
-        #print(ek)
-        if(criterioParada(A,b,x,tol,errores,itrVector,itr)):            #Comprobar el criterio de parada
+        if(criterioParada(A,b,x,tol)):            #Comprobar el criterio de parada
             print(x)
             return x                      #Retornar el vector de soluciones
         itr = itr+1
